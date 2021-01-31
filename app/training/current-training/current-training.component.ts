@@ -1,5 +1,6 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component,OnInit,  } from '@angular/core';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { TrainingService } from '../training.service';
 import { StopTrainingComponent } from './stop-training.component';
 
 @Component({
@@ -9,26 +10,28 @@ import { StopTrainingComponent } from './stop-training.component';
 })
 export class CurrentTrainingComponent implements OnInit {
 
-  @Output() trainingExit = new EventEmitter();
+
   progress = 0;
   timer;
 
   constructor(
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private trainingService: TrainingService
   ) { }
 
   ngOnInit() {
     this.startOrResumeTrimer();
   }
 
-
   startOrResumeTrimer() {
+    const step = this.trainingService.getRunningExercise().duration / 100 * 1000  // step duration 
     this.timer = setInterval(() => {
-      this.progress = this.progress + 5;
+      this.progress = this.progress + 1;
       if (this.progress >= 100) {
+        this.trainingService.completeExercise();
         clearInterval(this.timer); //Stop timer going beyond 100%
       }
-    }, 1000)
+    }, step)
   }
 
   onStop() {
@@ -40,11 +43,10 @@ export class CurrentTrainingComponent implements OnInit {
     });
     dialogRef.afterClosed().subscribe(result => {
       console.log(result);
-      if (result) this.trainingExit.emit(); // If user click yes emit event. Training comp. will set "ongoingTraining to false"
+      if (result) {
+        this.trainingService.cancelExercise(this.progress);
+      } 
       else this.startOrResumeTrimer(); // If user click No, resume the timer. As we store timer value in "timer" count will resume 
     });
   }
-
-
-
 }
